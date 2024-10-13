@@ -1,0 +1,19 @@
+{
+    "name": "mqtt/mqtt_php",
+    "description": "MQTT Test in PHP",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Mqtt\\MqttPhp\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "MSSohan",
+            "email": "sohan.cu.eee.17@gmail.com"
+        }
+    ],
+    "require": {
+        "php-mqtt/client": "^2.1"
+    }
+}
