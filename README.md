@@ -28,6 +28,10 @@ Or,
     ```
     php index.php
     ```
+5. Run the client:
+   ```
+   python client.py
+   ```
 
 
 Authors
