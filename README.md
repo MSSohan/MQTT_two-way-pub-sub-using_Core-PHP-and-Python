@@ -23,12 +23,12 @@ See [https://getcomposer.org/](https://getcomposer.org/) for more information an
    ```
    php -S localhost:8000
    ```
-Or,
+5. Or, If you want to run the php server on the terminal,
 
     ```
-    php index.php
+    php MqttServer.php
     ```
-5. Run the client:
+6. Run the client:
    ```
    python client.py
    ```
