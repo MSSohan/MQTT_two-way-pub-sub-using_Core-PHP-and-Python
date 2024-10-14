@@ -1,10 +1,10 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php'; // Ensure Composer dependencies are loaded
+require __DIR__ . '/vendor/autoload.php'; // Make sure to adjust the path if necessary
 
-use Mqtt\MqttPhp\Controller\MqttServer; // Update to match the new namespace
+use Mqtt\MqttPhp\Controller\MqttServer;
 
-// Create an instance of the MqttServer class
+// Create an instance of MqttServer
 $mqttServer = new MqttServer();
 
 // Start the MQTT server

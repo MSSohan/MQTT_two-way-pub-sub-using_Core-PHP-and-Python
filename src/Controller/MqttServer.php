@@ -1,62 +1,73 @@
 <?php
 
-namespace Mqtt\MqttPhp\Controller; // Update to match your composer.json namespace
+namespace Mqtt\MqttPhp\Controller;  // Make sure to set the correct namespace
+
+require __DIR__ . '/../../vendor/autoload.php'; // Adjust the path if necessary
 
 use PhpMqtt\Client\MqttClient;
 use PhpMqtt\Client\Exceptions\MqttClientException;
+use PhpMqtt\Client\ConnectionSettings;
 
-class MqttServer
-{
+class MqttServer {
     private $client;
+    private $MQTT_USER = '';  // Set if required
+    private $MQTT_PASSWORD = '';  // Set if required
+    private $MQTT_SERVER = 'broker.emqx.io';
+    private $MQTT_PORT = 1883;
+    private $MQTT_KEEPALIVE = 60;  // Keepalive interval in seconds
+    private $TOPIC = 'uprint/kiosk';
 
-    public function __construct()
-    {
-        $config = [
-            'server' => 'broker.emqx.io',
-            'port' => 1883,
-            'username' => '',  // Set if required
-            'password' => '',  // Set if required
-            'keepalive' => 60,
-        ];
-
-        $this->client = new MqttClient($config['server'], $config['port'], 'php-server-' . uniqid());
-    }
-
-    public function start()
-    {
+    public function start() {
         try {
-            $this->client->connect('', '', 60);
-            $topic = 'uprint/kiosk';
-            echo "Subscribed to topic '{$topic}'" . PHP_EOL;
+            // Create MQTT client instance
+            $this->client = new MqttClient($this->MQTT_SERVER, $this->MQTT_PORT, uniqid('php-client-'));
 
-            // Handle incoming messages
-            $this->client->subscribe($topic, function ($topic, $message) {
+            // Configure connection settings
+            $settings = (new ConnectionSettings())
+                ->setUsername(trim($this->MQTT_USER))
+                ->setPassword(trim($this->MQTT_PASSWORD));
+
+            // Connect to the broker with the specified keep-alive interval
+            if (!empty($this->MQTT_USER)) {
+                $this->client->connect($settings, true, $this->MQTT_KEEPALIVE);
+            } else {
+                $this->client->connect(null, true, $this->MQTT_KEEPALIVE); // Connect without credentials
+            }
+
+            echo "Connected successfully to the broker." . PHP_EOL;
+
+            // Subscribe to the topic
+            $this->client->subscribe($this->TOPIC, function ($topic, $message) {
                 echo "Received message on topic '{$topic}' with payload: {$message}" . PHP_EOL;
 
-                // You can parse the message and decide to publish a response
+                // Handle the message and publish a response
                 $data = json_decode($message, true);
                 if (json_last_error() === JSON_ERROR_NONE && isset($data['device_id'])) {
                     $deviceId = $data['device_id'];
                     $responseTopic = "uprint/kiosk/{$deviceId}";
                     $responseMessage = json_encode(['response' => 'Message received', 'device_id' => $deviceId]);
 
-                    // Publish the response
                     $this->client->publish($responseTopic, $responseMessage, 1);
                     echo "Sent response '{$responseMessage}' to topic '{$responseTopic}'" . PHP_EOL;
                 } else {
                     echo "Invalid message format" . PHP_EOL;
                 }
-            }, 1);  // QoS 1
+            }, 1);
 
-            // Start the client loop to receive messages
-            $this->client->loop(true);
+            echo "Subscribed to topic '{$this->TOPIC}'" . PHP_EOL;
+
+            // Keep the client running to receive messages
+            while ($this->client->isConnected()) {
+                $this->client->loop(true);  // Block until a message arrives
+                usleep(100000);  // Sleep for 100ms to reduce CPU usage
+            }
+
+            // Disconnect gracefully
+            $this->client->disconnect();
+            echo "Disconnected from the broker." . PHP_EOL;
+
         } catch (MqttClientException $e) {
-            echo 'Failed: ' . $e->getMessage() . PHP_EOL;
+            echo 'An error occurred: ' . $e->getMessage() . PHP_EOL;
         }
-    }
-
-    public function stop()
-    {
-        $this->client->disconnect();
     }
 }
