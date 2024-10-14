@@ -1,64 +1,67 @@
 <?php
 
-namespace Controller;
-
-require __DIR__ . '/../../vendor/autoload.php'; // Ensure Composer dependencies are loaded
+require __DIR__ . '/vendor/autoload.php';
 
 use PhpMqtt\Client\MqttClient;
 use PhpMqtt\Client\Exceptions\MqttClientException;
+use PhpMqtt\Client\ConnectionSettings;
 
-class MqttServer
-{
-    private $client;
+// MQTT settings
+$MQTT_USER = ''; // Leave empty if not needed
+$MQTT_PASSWORD = ''; // Leave empty if not needed
+$MQTT_SERVER = 'broker.emqx.io';
+$MQTT_PORT = 1883;
+$MQTT_KEEPALIVE = 60;  // Keepalive interval in seconds
+$TOPIC = 'uprint/kiosk';
 
-    public function __construct()
-    {
-        $config = [
-            'server' => 'broker.emqx.io',
-            'port' => 1883,
-            'username' => '',  // Set if required
-            'password' => '',  // Set if required
-            'keepalive' => 60,
-        ];
+try {
+    // Create MQTT client instance
+    $client = new MqttClient($MQTT_SERVER, $MQTT_PORT, uniqid('php-client-'));
 
-        $this->client = new MqttClient($config['server'], $config['port'], 'php-server-' . uniqid());
+    // Configure connection settings
+    $settings = (new ConnectionSettings())
+        ->setUsername(trim($MQTT_USER)) // Trim any whitespace
+        ->setPassword(trim($MQTT_PASSWORD)); // Trim any whitespace
+
+    // Connect to the broker with the specified keep-alive interval
+    if (!empty($MQTT_USER)) {
+        $client->connect($settings, true, $MQTT_KEEPALIVE);
+    } else {
+        $client->connect(null, true, $MQTT_KEEPALIVE); // Connect without credentials
     }
 
-    public function start()
-    {
-        try {
-            $this->client->connect($config['username'], $config['password'], $config['keepalive']);
-            $topic = 'uprint/kiosk';
-            echo "Subscribed to topic '{$topic}'" . PHP_EOL;
+    echo "Connected successfully to the broker." . PHP_EOL;
 
-            // Handle incoming messages
-            $this->client->subscribe($topic, function ($topic, $message) {
-                echo "Received message on topic '{$topic}' with payload: {$message}" . PHP_EOL;
+    // Subscribe to the topic
+    $client->subscribe($TOPIC, function ($topic, $message) use ($client) {
+        echo "Received message on topic '{$topic}' with payload: {$message}" . PHP_EOL;
 
-                // You can parse the message and decide to publish a response
-                $data = json_decode($message, true);
-                if (json_last_error() === JSON_ERROR_NONE && isset($data['device_id'])) {
-                    $deviceId = $data['device_id'];
-                    $responseTopic = "uprint/kiosk/{$deviceId}";
-                    $responseMessage = json_encode(['response' => 'Message received', 'device_id' => $deviceId]);
+        // Handle the message and publish a response
+        $data = json_decode($message, true);
+        if (json_last_error() === JSON_ERROR_NONE && isset($data['device_id'])) {
+            $deviceId = $data['device_id'];
+            $responseTopic = "uprint/kiosk/{$deviceId}";
+            $responseMessage = json_encode(['response' => 'Message received', 'device_id' => $deviceId]);
 
-                    // Publish the response
-                    $this->client->publish($responseTopic, $responseMessage, 1);
-                    echo "Sent response '{$responseMessage}' to topic '{$responseTopic}'" . PHP_EOL;
-                } else {
-                    echo "Invalid message format" . PHP_EOL;
-                }
-            }, 1);  // QoS 1
-
-            // Start the client loop to receive messages
-            $this->client->loop(true);
-        } catch (MqttClientException $e) {
-            echo 'Failed: ' . $e->getMessage() . PHP_EOL;
+            $client->publish($responseTopic, $responseMessage, 1);
+            echo "Sent response '{$responseMessage}' to topic '{$responseTopic}'" . PHP_EOL;
+        } else {
+            echo "Invalid message format" . PHP_EOL;
         }
+    }, 1);
+
+    echo "Subscribed to topic '{$TOPIC}'" . PHP_EOL;
+
+    // Keep the client running to receive messages
+    while ($client->isConnected()) {
+        $client->loop(true);  // Block until a message arrives
+        usleep(100000);  // Sleep for 100ms to reduce CPU usage
     }
 
-    public function stop()
-    {
-        $this->client->disconnect();
-    }
+    // Disconnect gracefully
+    $client->disconnect();
+    echo "Disconnected from the broker." . PHP_EOL;
+
+} catch (MqttClientException $e) {
+    echo 'An error occurred: ' . $e->getMessage() . PHP_EOL;
 }
