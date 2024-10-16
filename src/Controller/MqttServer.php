@@ -16,6 +16,7 @@ class MqttServer {
     private $MQTT_PORT = 1883;
     private $MQTT_KEEPALIVE = 60;  // Keepalive interval in seconds
     private $TOPIC = 'uprint/kiosk';
+    private $messagesFile = __DIR__ . '/../../messages.json'; // Path to store messages
 
     public function start() {
         set_time_limit(0); // Allow the script to run indefinitely
@@ -40,20 +41,7 @@ class MqttServer {
     
             // Subscribe to the topic
             $this->client->subscribe($this->TOPIC, function ($topic, $message) {
-                echo "Received message on topic '{$topic}' with payload: {$message}" . PHP_EOL;
-    
-                // Handle the message and publish a response
-                $data = json_decode($message, true);
-                if (json_last_error() === JSON_ERROR_NONE && isset($data['device_id'])) {
-                    $deviceId = $data['device_id'];
-                    $responseTopic = "uprint/kiosk/{$deviceId}";
-                    $responseMessage = json_encode(['response' => 'Message received', 'device_id' => $deviceId]);
-    
-                    $this->client->publish($responseTopic, $responseMessage, 1);
-                    echo "Sent response '{$responseMessage}' to topic '{$responseTopic}'" . PHP_EOL;
-                } else {
-                    echo "Invalid message format" . PHP_EOL;
-                }
+                $this->handleMessage($topic, $message); // Handle the incoming message
             }, 1);
     
             echo "Subscribed to topic '{$this->TOPIC}'" . PHP_EOL;
@@ -77,4 +65,50 @@ class MqttServer {
             echo 'An error occurred: ' . $e->getMessage() . PHP_EOL;
         }
     }    
+
+    // Function to handle incoming messages
+    private function handleMessage($topic, $message) {
+        echo "Received message on topic '{$topic}' with payload: {$message}" . PHP_EOL;
+
+        // Decode the message
+        $data = json_decode($message, true);
+        if (json_last_error() === JSON_ERROR_NONE && isset($data['device_id'])) {
+            $deviceId = $data['device_id'];
+            $responseTopic = "uprint/kiosk/{$deviceId}";
+            $responseMessage = json_encode(['response' => 'Message received', 'device_id' => $deviceId]);
+
+            // Publish a response
+            $this->client->publish($responseTopic, $responseMessage, 1);
+            echo "Sent response '{$responseMessage}' to topic '{$responseTopic}'" . PHP_EOL;
+
+            // Store the message in a file
+            $this->storeMessage($message); // Call to the function that stores messages
+        } else {
+            echo "Invalid message format" . PHP_EOL;
+        }
+    }
+
+    // Function to store messages in a JSON file
+    private function storeMessage($message) {
+        $messages = [];
+    
+        // Load existing messages if the file exists
+        if (file_exists($this->messagesFile)) {
+            $messages = json_decode(file_get_contents($this->messagesFile), true);
+        }
+    
+        // Add the new message to the array
+        $messages[] = $message;
+    
+        // Check if the total number of messages exceeds 500
+        if (count($messages) >= 500) {
+            // Clear the messages.json file
+            file_put_contents($this->messagesFile, json_encode([])); // Write an empty array to clear the file
+            echo "Messages.json cleared because the total number of messages reached 500." . PHP_EOL;
+        } else {
+            // Save the updated messages back to the file
+            file_put_contents($this->messagesFile, json_encode($messages));
+        }
+    }
+    
 }
