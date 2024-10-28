@@ -20,6 +20,7 @@ class MqttServer {
 
     public function start() {
         set_time_limit(0); // Allow the script to run indefinitely
+        date_default_timezone_set('Asia/Dhaka'); 
     
         try {
             // Create MQTT client instance
@@ -91,15 +92,35 @@ class MqttServer {
     // Function to store messages in a JSON file
     private function storeMessage($message) {
         $messages = [];
-    
+        
         // Load existing messages if the file exists
         if (file_exists($this->messagesFile)) {
             $messages = json_decode(file_get_contents($this->messagesFile), true);
         }
-    
+
+        // Determine the next ID
+        $nextId = count($messages) + 1; // Simple incrementing ID based on count
+        
+        // Decode the message to get the device_id and timestamp (assumed to be in the message)
+        $data = json_decode($message, true);
+        if (isset($data['device_id'])) {
+            $deviceId = $data['device_id'];
+        } else {
+            $deviceId = 'unknown';
+        }
+
+        // Create a new message structure with an ID
+        $newMessage = [
+            'id' => $nextId,
+            'device_id' => $deviceId,
+            'status' => $data['status'],
+            'time' => $data['time'],
+            'timestamp' => date('Y-m-d h:i:s A') // Current timestamp
+        ];
+
         // Add the new message to the array
-        $messages[] = $message;
-    
+        $messages[] = $newMessage;
+
         // Check if the total number of messages exceeds 500
         if (count($messages) >= 500) {
             // Clear the messages.json file
@@ -110,5 +131,10 @@ class MqttServer {
             file_put_contents($this->messagesFile, json_encode($messages));
         }
     }
-    
+}
+
+// Start the MQTT server if this script is run directly
+if (php_sapi_name() == "cli") {
+    $mqttServer = new MqttServer();
+    $mqttServer->start();
 }
