@@ -24,8 +24,11 @@ class WebPageDesign {
                             
                             data.forEach(msg => {
                                 const messageElement = document.createElement('div');
-                                messageElement.className = 'message'; // Add a class for styling
-                                messageElement.textContent = msg; // You can format this as needed
+                                messageElement.className = 'message';
+                                messageElement.textContent = `${msg.id}:  
+                                                                Device ID: ${msg.device_id}, 
+                                                                Status: ${msg.status},
+                                                                Time: ${msg.timestamp}`; // Adjust based on your message structure
                                 messagesContainer.appendChild(messageElement);
                             });
                         })
@@ -34,7 +37,7 @@ class WebPageDesign {
 
                 // Fetch messages on page load and every 2 seconds
                 window.onload = fetchMessages; // Fetch on page load
-                setInterval(fetchMessages, 2000); // Fetch messages every 2 seconds
+                setInterval(fetchMessages, 100); // Fetch messages every 2 seconds
             </script>
         </head>
         <body>
