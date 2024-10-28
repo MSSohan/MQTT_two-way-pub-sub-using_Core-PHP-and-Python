@@ -10,7 +10,7 @@ MQTT_SERVER = 'broker.emqx.io'
 MQTT_PORT = 1883  # Default MQTT port, change if necessary
 MQTT_KEEPALIVE = 60  # Keepalive interval in seconds
 
-DEVICE_ID = 'UP123456'  # Your device ID
+DEVICE_ID = 'UP1234'  # Your device ID
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
