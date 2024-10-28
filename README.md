@@ -21,8 +21,13 @@ See [https://getcomposer.org/](https://getcomposer.org/) for more information an
     ```
 4. Run this project:
    ```
+   php src/Controller/MqttServer.php
+   ```
+   and
+   ```
    php -S localhost:8000
    ```
+   and client.py 
 5. Or, If you want to run the php server on the terminal,
 
     ```
