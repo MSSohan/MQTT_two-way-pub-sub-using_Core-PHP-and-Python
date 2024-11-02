@@ -19,7 +19,20 @@ See [https://getcomposer.org/](https://getcomposer.org/) for more information an
     ```
     composer init
     ```
-4. Run this project:
+4. Package Install for PHP:
+    ```
+    composer require php-mqtt/client:^2.1
+    ```
+5. Create Virtual Environment for Python Client:
+    ```
+    python -m venv env
+    ```
+    then,
+    ```
+    .\env\Scripts\activate
+    ```
+
+7. Run this project (use individual 3 terminal):
    ```
    php src/Controller/MqttServer.php
    ```
@@ -27,13 +40,16 @@ See [https://getcomposer.org/](https://getcomposer.org/) for more information an
    ```
    php -S localhost:8000
    ```
-   and client.py 
-5. Or, If you want to run the php server on the terminal,
+   and
+   ```
+   python client.py
+   ```
+8. Or, If you want to run the php server on the terminal,
 
     ```
     php MqttServer.php
     ```
-6. Run the client:
+9. Run the client:
    ```
    python client.py
    ```
