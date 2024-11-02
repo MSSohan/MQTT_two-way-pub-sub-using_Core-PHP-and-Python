@@ -27,9 +27,13 @@ See [https://getcomposer.org/](https://getcomposer.org/) for more information an
     ```
     python -m venv env
     ```
-    then,
+    then, activate the venv:
     ```
     .\env\Scripts\activate
+    ```
+    Finally, install the package:
+    ```
+    pip3 install paho-mqtt
     ```
 
 7. Run this project (use individual 3 terminal):
